@@ -1,3 +1,18 @@
+// Debug functions
+window.showDebug = function(msg) {
+    const div = document.createElement('div');
+    div.style.position = 'fixed';
+    div.style.top = '10px';
+    div.style.left = '10px';
+    div.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    div.style.color = 'white';
+    div.style.padding = '10px';
+    div.style.zIndex = '99999';
+    div.innerHTML = msg;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
+};
+
 // ===== Platform 클래스 =====
 class Platform {
     constructor(x, y, w, h) {
@@ -126,6 +141,7 @@ class Goal {
 
 class Spike {
     constructor(x, y, w, h, code = true, r = 0) {
+        
         this.x = x;
         this.y = y;
         this.w = w;
@@ -137,7 +153,10 @@ class Spike {
         this.div = document.createElement("div");
         this.div.style.backgroundColor = 'red';
         this.div.style.position = "absolute";
-        this.div.style.zIndex = "2";
+        this.div.style.zIndex = "10";  // 높은 zIndex로 설정
+        this.div.style.opacity = "1";
+        this.div.style.display = 'block'
+        this.div.style.opacity = '1';
 
         document.body.appendChild(this.div);
     }
@@ -159,6 +178,7 @@ class Spike {
         } else {
             this.div.style.display = 'none';
         }
+        this.div.style.display = this.isExist ? 'block' : 'none';
     }
 
     remove() {
@@ -167,10 +187,17 @@ class Spike {
 }
 class VanishingSpike extends VanishingPlatform {
     constructor(x, y, w, h, r, code) {
+        console.log('VanishingSpike constructor called with:', {x, y, w, h, r, code});
         super(x, y, w, h, r, code);
         this.div.style.backgroundColor = 'red';
     }
     update(player) {
+        console.log('VanishingSpike update:', {
+            x: this.x, y: this.y,
+            playerX: player.x, playerY: player.y,
+            vanished: this.vanished,
+            code: this.code
+        });
         if ((this.code && this.vanished) || (!this.code && !this.vanished)) {
             // 플레이어가 플랫폼 가까이 있는지 확인
             if (Math.sqrt((player.x + player.w / 2 - (this.x + this.w / 2)) ** 2 +
@@ -280,7 +307,7 @@ const stages = [
     },
     {
         platforms: [
-            {x: 0, y: 500, w: 600, h: 50},
+            {x: -100, y: 500, w: 700, h: 50},
             {x: 600, y: 400, w: 300, h: 150},
             {x: 1000, y: 600, w: 300, h: 50},
         ],
@@ -288,6 +315,7 @@ const stages = [
             {x: 400, y: 450, w: 50, h: 50, code: true, r: 0},
             {x: 800, y: 350, w: 50, h: 50, code: false, r: 100},
             {x: 500, y: 950, w: 50, h: 50, code: false, r: 100},
+            {x: -500, y: 800, w: 800, h: 50, code: false, r: 100}
         ],
         vanishingPlatforms: [
             {x: 0, y: 1000, w: 1200, h: 50, r: 500 , code: true},
@@ -324,6 +352,7 @@ window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
 // ===== 초기화 함수 =====
 function initGame() {
+    console.log('Initializing game for stage:', currentStage);
     keys = {};
     // 기존 게임 오브젝트 제거
     if (player) player.remove();
@@ -338,6 +367,8 @@ function initGame() {
     VanishingSpikes.forEach(vs => vs.remove());
     VanishingSpikes = [];
     
+    console.log('Stage data:', stages[currentStage]);
+    
 
     // 새 게임 오브젝트 생성
     if (player) {
@@ -351,13 +382,18 @@ function initGame() {
     stageData.platforms.forEach(pdata => {
         platforms.push(new Platform(pdata.x, pdata.y, pdata.w, pdata.h));
     });
-    stageData.spikes.forEach(sdata => {
+    console.log('Creating spikes for stage:', currentStage);
+    stageData.spikes.forEach((sdata, idx) => {
+        console.log('Creating spike', idx, sdata);
         spikes.push(new Spike(sdata.x, sdata.y, sdata.w, sdata.h, sdata.code, sdata.r));
     });
+    console.log('Creating vanishing platforms');
     stageData.vanishingPlatforms.forEach(vpdata => {
         vanishingPlatforms.push(new VanishingPlatform(vpdata.x, vpdata.y, vpdata.w, vpdata.h, vpdata.r, vpdata.code));
     });
-    stageData.VanishingSpikes.forEach(vsdata => {
+    console.log('Creating vanishing spikes');
+    stageData.VanishingSpikes.forEach((vsdata, idx) => {
+        console.log('Creating vanishing spike', idx, vsdata);
         VanishingSpikes.push(new VanishingSpike(vsdata.x, vsdata.y, vsdata.w, vsdata.h, vsdata.r, vsdata.code));
     });
 
