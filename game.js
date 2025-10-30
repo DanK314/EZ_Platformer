@@ -328,9 +328,11 @@ const stages = [
         ],
         spikes: [
             {x: 400, y: 450, w: 50, h: 50, code: true, r: 0},
+            {x: 1, y: 500, w: 1, h: 1, code: true, r: 0},
             {x: 800, y: 350, w: 50, h: 50, code: false, r: 100},
             {x: 500, y: 950, w: 50, h: 50, code: false, r: 100},
-            {x: -500, y: 800, w: 800, h: 50, code: false, r: 100}
+            {x: -500, y: 800, w: 800, h: 50, code: false, r: 100},
+            {x: 1000, y: 599, w: 300, h: 1, code: false, r: 100}
         ],
         vanishingPlatforms: [
             {x: 0, y: 1000, w: 1200, h: 50, r: 500 , code: true},
@@ -357,7 +359,32 @@ const stages = [
             {x: 300, y: 1000, w: 200, h: 50, vx: 1700, vy: -1300}
         ],
         goal: {x: 2250, y: 400, size: 50}
-    }
+    },
+    {
+        platforms: [
+            {x: 0, y: 500, w: 300, h: 50},
+            {x: 500, y: 500, w: 300, h: 50},
+            {x: 1000, y: 500, w: 300, h: 50},
+            {x: 1500, y: 500, w: 300, h: 50},
+            {x: 2000, y: 500, w: 800, h: 50},
+            {x: 300, y: -2000, w: 200, h: 50},
+        ],
+        spikes: [
+            {x: 300, y: -2500, w: 10, h:500},
+            {x: 490, y: -2500, w: 10, h:500},
+            {x: 2400, y: 400, w: 50, h: 50, code: false, r: 100}
+        ],
+        vanishingPlatforms: [],
+        VanishingSpikes: [
+            {x: 2300, y: 450, w: 50, h: 50, r: 80, code: false}
+        ],
+        Teleporters: [
+            {x: 300, y: 700, w: 200, h: 50, vx: 0, vy: -3700},
+            {x: 2200, y: 300, w: 10, h: 200, vx: -2200, vy: 0},
+            {x: -200, y: 500, w: 50, h: 50, vx: 2800, vy: -100},
+        ],
+        goal: {x: 2250, y: 400, size: 50}
+    },
 ];
 
 // ===== 키 입력 처리 =====
