@@ -234,6 +234,23 @@ class Teleporter extends Platform{
     }
     remove(){}
 }
+class MovingSpike extends Spike{
+    constructor(x,y,w,h,code=true,r=0,vx=0,vy=0,timer=0){
+        super(x,y,w,h,code,r);
+        this.vx = vx;
+        this.vy = vy;
+        this.timer = timer;
+    }
+    update(cameraX = 0, cameraY = 0, player=null) {
+        if(this.timer <= 0){
+            this.x += this.vx;
+            this.y += this.vy;
+        }else{
+            this.timer--;
+        }
+        super.update(cameraX, cameraY, player);
+    }
+}
 
 // ===== UI 요소 생성 =====
 const titleScreen = document.createElement("div");
@@ -278,6 +295,7 @@ spikes = [];
 vanishingPlatforms = [];
 VanishingSpikes = [];
 Teleporters = [];
+MovingSpikes = [];
 
 // ===== 스테이지 데이터 =====
 // 각 스테이지마다 플랫폼 배열과 골 위치 설정
@@ -293,6 +311,7 @@ const stages = [
         ],
         VanishingSpikes: [],
         Teleporters: [],
+        MovingSpikes: [],
         goal: {x: 850, y: 250, size: 50},
     },
     {
@@ -318,6 +337,7 @@ const stages = [
         ],
         VanishingSpikes: [],
         Teleporters: [],
+        MovingSpikes: [],
         goal: {x: -1800, y: 300, size: 50},
     },
     {
@@ -341,6 +361,7 @@ const stages = [
             {x: 550, y: 950, w: 50, h: 50, r: 100 , code: false},
         ],
         Teleporters: [],
+        MovingSpikes: [],
         goal: {x: 0, y: 950, size: 50},
     },
     {
@@ -358,6 +379,7 @@ const stages = [
             {x: 1250, y: 400, w: 50, h: 50, vx: -500, vy: 0},
             {x: 300, y: 1000, w: 200, h: 50, vx: 1700, vy: -1300}
         ],
+        MovingSpikes: [],
         goal: {x: 2250, y: 400, size: 50}
     },
     {
@@ -383,7 +405,35 @@ const stages = [
             {x: 2200, y: 300, w: 10, h: 200, vx: -2200, vy: 0},
             {x: -200, y: 500, w: 50, h: 50, vx: 2800, vy: -100},
         ],
+        MovingSpikes: [],
         goal: {x: 2250, y: 400, size: 50}
+    },
+    {
+        platforms: [
+            {x: 0, y: 500, w: 300, h: 50},
+            {x: 500, y: 500, w: 300, h: 50},
+            {x: 1000, y: 500, w: 300, h: 50},
+            {x: 1500, y: 500, w: 50, h: 50},
+            {x: 1700, y: 500, w: 50, h: 50},
+            {x: 1900, y: 500, w: 50, h: 50},
+            {x: 2100, y: 500, w: 50, h: 50},
+            {x: 2300, y: 500, w: 400, h: 50},
+            {x: 2000, y: 900, w: 900, h: 50},
+            {x: 1700, y: 900, w: 700, h: 50}
+        ],
+        spikes: [
+            {x: 0, y: 640, w: 2700, h: 10},
+            {x: 1125, y: 450, w: 50, h: 50},
+            {x: 2625, y: 450, w: 50, h: 50},
+            {x: 2650, y: 850, w: 50, h: 50},
+        ],
+        vanishingPlatforms: [],
+        VanishingSpikes: [],
+        Teleporters: [],
+        MovingSpikes: [
+            {x: -1000, y: 0, w: 10, h: 2000, code: true, r: 0, vx: 20, vy: 0, timer: 2000},
+        ],
+        goal: {x: 1700, y: 850, size: 50}
     },
 ];
 
@@ -427,6 +477,8 @@ function initGame() {
     VanishingSpikes.forEach(vs => vs.remove());
     VanishingSpikes = [];
     Teleporters = [];
+    MovingSpikes.forEach(ms => ms.remove());
+    MovingSpikes = [];
     
     console.log('Stage data:', stages[currentStage]);
     
@@ -461,6 +513,11 @@ function initGame() {
     stageData.Teleporters.forEach((Tps,idx) => {
         console.log('making teleporter',idx,Tps);
         Teleporters.push(new Teleporter(Tps.x, Tps.y, Tps.w, Tps.h, Tps.vx, Tps.vy));
+    });
+    console.log('Creating moving spikes');
+    stageData.MovingSpikes.forEach((Msdata, idx) => {
+        console.log('Creating moving spike', idx, Msdata);
+        MovingSpikes.push(new MovingSpike(Msdata.x, Msdata.y, Msdata.w, Msdata.h, Msdata.code, Msdata.r, Msdata.vx, Msdata.vy, Msdata.timer));
     });
 
     const g = stageData.goal;
@@ -591,6 +648,12 @@ function gameLoop() {
                 break;
             }
         }
+        for (let mspike of MovingSpikes) {
+            if (checkCollision(player, mspike) && mspike.isExist) {
+                gameOver();
+                break;
+            }
+        }
 
 
         
@@ -612,6 +675,11 @@ function gameLoop() {
                 spikes = [];
                 vanishingPlatforms.forEach(vp => vp.remove());
                 vanishingPlatforms = [];
+                VanishingSpikes.forEach(vs => vs.remove());
+                VanishingSpikes = [];
+                Teleporters = [];
+                MovingSpikes.forEach(ms => ms.remove());
+                MovingSpikes = [];
             } else {
                 // 다음 스테이지 시작
                 initGame();
@@ -635,6 +703,7 @@ function gameLoop() {
         vanishingPlatforms.forEach(vp => vp.CameraUpdate(camera.x, camera.y));
         VanishingSpikes.forEach(vs => vs.cameraUpdate(camera.x, camera.y));
         Teleporters.forEach(tp => tp.update(camera.x, camera.y));
+        MovingSpikes.forEach(ms => ms.update(camera.x, camera.y, player));
     }
 }
 
@@ -676,6 +745,9 @@ function resetToTitle() {
     vanishingPlatforms = [];
     VanishingSpikes.forEach(vs => vs.remove());
     VanishingSpikes = [];
+    Teleporters = [];
+    MovingSpikes.forEach(ms => ms.remove());
+    MovingSpikes = [];
 }
 
 // ===== 게임 시작 =====
