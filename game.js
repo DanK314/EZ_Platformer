@@ -265,7 +265,22 @@ titleScreen.style.fontSize = "32px";
 titleScreen.style.textAlign = "center";
 titleScreen.style.whiteSpace = "pre-line";
 titleScreen.style.zIndex = "10000";
+titleScreen.style.display = "none";
 document.body.appendChild(titleScreen);
+
+const loadingScreen = document.createElement("div");
+loadingScreen.innerText = "Loading...";
+loadingScreen.style.position = "fixed";
+loadingScreen.style.padding = "20px";
+loadingScreen.style.top = "50%";
+loadingScreen.style.left = "50%";
+loadingScreen.style.transform = "translate(-50%, -50%)";
+loadingScreen.style.color = "#000";
+loadingScreen.style.fontSize = "32px";
+loadingScreen.style.textAlign = "center";
+loadingScreen.style.whiteSpace = "pre-line";
+loadingScreen.style.zIndex = "10000";
+document.body.appendChild(loadingScreen);
 
 const gameOverScreen = document.createElement("div");
 gameOverScreen.innerText = "실패한, 그것은 매우 슬픈!\n당신은 떨어져 공허에 갇혔습니다.\n[R키를 눌러 타이틀로]";
@@ -431,7 +446,7 @@ const stages = [
         VanishingSpikes: [],
         Teleporters: [],
         MovingSpikes: [
-            {x: -1000, y: 0, w: 10, h: 2000, code: true, r: 0, vx: 20, vy: 0, timer: 2000},
+            {x: -1000, y: 0, w: 10, h: 2000, code: true, r: 0, vx: 20, vy: 0, timer: 1200},
         ],
         goal: {x: 1700, y: 850, size: 50}
     },
@@ -439,25 +454,26 @@ const stages = [
 
 // ===== 키 입력 처리 =====
 let keys = {};
-window.addEventListener("keydown", e => {
-    const key = e.key.toLowerCase();
-    keys[key] = true;
-
-    if (gameState === "title" && key === " ") {
-        titleScreen.style.display = "none";
-        document.documentElement.requestFullscreen();
-        initGame();
-        gameState = "playing";
-    } else if (gameState === "playing" && key === "backspace") {
-        e.preventDefault();
-        resetToTitle();
-    } else if ((gameState === "gameover" || gameState === "clear") && key.toLowerCase() === "r") {
-        // 게임오버 또는 클리어 화면에서 아무 키 누르면 타이틀로
-        gameOverScreen.style.display = "none";
-        clearScreen.style.display = "none";
-        resetToTitle();
-    }
-});
+function AddKeyInput() {
+    window.addEventListener("keydown", e => {
+        const key = e.key.toLowerCase();
+        keys[key] = true;
+        if (gameState === "title" && key === " ") {
+            titleScreen.style.display = "none";
+            document.documentElement.requestFullscreen();
+            initGame();
+            gameState = "playing";
+        } else if (gameState === "playing" && key === "backspace") {
+            e.preventDefault();
+            resetToTitle();
+        } else if ((gameState === "gameover" || gameState === "clear") && key.toLowerCase() === "r") {
+            // 게임오버 또는 클리어 화면에서 아무 키 누르면 타이틀로
+            gameOverScreen.style.display = "none";
+            clearScreen.style.display = "none";
+            resetToTitle();
+        }
+    });
+}
 window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
 // ===== 초기화 함수 =====
@@ -598,8 +614,13 @@ function gameLoop() {
         else player.vx = 0;
 
         // 점프
-        if ((keys["arrowup"] || keys["w"]) && player.onGround) {
-            player.vy = -jump;
+        if ((keys["arrowup"] || keys["w"]) && player.onGround) {            
+            // 🎧 점프 시 소리 재생 로직 추가
+            if (sounds.length > 0) {
+                sounds[0].currentTime = 0.1; // 재생 위치를 처음으로 돌림
+                sounds[0].play().catch(e => console.log("점프 소리 재생 실패:", e));
+            }
+                        player.vy = -jump;
             player.onGround = false;
         }
 
@@ -731,6 +752,7 @@ function resetToTitle() {
     titleScreen.style.display = "block";
     gameOverScreen.style.display = "none";
     clearScreen.style.display = "none";
+    loadingScreen.style.display = "none";
 
     if (player) player.remove();
     platforms.forEach(p => p.remove());
@@ -751,4 +773,49 @@ function resetToTitle() {
 }
 
 // ===== 게임 시작 =====
-setInterval(gameLoop, 1000 / 120);
+
+let sounds = []; 
+sounds.push(new Audio("Sounds/jump.mp3")); 
+
+let soundCounts = 0;
+gameState = "loading";
+
+// 로딩 화면 표시 및 텍스트 설정
+loadingScreen.innerText = "Loading..."; 
+loadingScreen.style.display = "block";
+
+function checkAllSoundsLoaded() {
+    if(soundCounts === sounds.length){
+        loadingScreen.style.display = "none";
+        resetToTitle();
+        AddKeyInput();
+        setInterval(gameLoop, 1000 / 120);
+    }
+}
+
+if (sounds.length === 0) {
+    checkAllSoundsLoaded(); // 오디오가 없으면 바로 시작
+} else {
+    sounds.forEach((s) => {
+        // 1. 이벤트 리스너 등록: 오디오 로드가 완료될 때 (아직 완료되지 않았다면)
+        const onCanPlayThrough = function() {
+            soundCounts++;
+            s.removeEventListener('canplaythrough', onCanPlayThrough); // 중복 실행 방지
+            checkAllSoundsLoaded();
+        };
+        
+        s.addEventListener('canplaythrough', onCanPlayThrough);
+
+        // 2. 로드 상태 즉시 확인: 이미 로드가 완료되었을 수 있으므로
+        // readyState 4는 HAVE_ENOUGH_DATA를 의미합니다. (canplaythrough가 발생했거나 곧 발생할 상태)
+        if (s.readyState === 4) { 
+            // 리스너가 추가되기 전에 이미 로드 완료된 경우
+            soundCounts++;
+            s.removeEventListener('canplaythrough', onCanPlayThrough);
+            checkAllSoundsLoaded();
+        }
+        
+        // 오디오 로드를 시작하도록 명시적으로 load()를 호출할 수도 있습니다.
+        s.load(); 
+    });
+}
