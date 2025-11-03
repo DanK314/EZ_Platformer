@@ -86,6 +86,7 @@ class Player {
         this.vx = 0;
         this.vy = 0;
         this.onGround = false;
+        this.jumpPower = 7; // 점프력을 변수로 설정
 
         this.div = document.createElement("div");
         this.div.style.backgroundColor = '#FFFFFF';
@@ -254,7 +255,8 @@ class MovingSpike extends Spike{
 
 // ===== UI 요소 생성 =====
 const titleScreen = document.createElement("div");
-titleScreen.innerText = "아주 쉬운 플랫폼 게임\n[스페이스바로 시작]";
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+titleScreen.innerText = `아주 쉬운 플랫폼 게임\n[${isMobile ? '화면을 터치하여 시작' : '스페이스바로 시작'}]`;
 titleScreen.style.position = "fixed";
 titleScreen.style.padding = "20px";
 titleScreen.style.top = "50%";
@@ -450,24 +452,129 @@ const stages = [
         ],
         goal: {x: 1700, y: 850, size: 50}
     },
+    {
+        platforms: [
+            // 시작 플랫폼 (더 넓게)
+            {x: 0, y: 500, w: 200, h: 30},
+            // 중간 플랫폼들 (더 넓게, 높이차 조정)
+            {x: 300, y: 450, w: 100, h: 30},
+            {x: 600, y: 400, w: 100, h: 30},
+            {x: 900, y: 350, w: 100, h: 30},
+            {x: 1200, y: 300, w: 100, h: 30},
+            // 텔레포터 구간 플랫폼
+            {x: 1250, y: 250, w: 200, h: 30},
+            // 최종 구간 플랫폼
+            {x: 2500, y: 300, w: 300, h: 30}
+        ],
+        spikes: [
+            // 바닥 전체를 덮는 가시
+            {x: -100, y: 800, w: 2000, h: 50, code: true, r: 0},
+            // 첫 번째 텔레포터 화살표 (함정 텔레포터)
+            {x: 1290, y: 130, w: 10, h: 40, code: true, r: 0}, // 왼쪽 대각선
+            {x: 1330, y: 130, w: 10, h: 40, code: true, r: 0}, // 오른쪽 대각선
+            {x: 1310, y: 110, w: 10, h: 60, code: true, r: 0}, // 중앙 축
+            // 두 번째 텔레포터 화살표 (진짜 텔레포터)
+            {x: 1390, y: 130, w: 10, h: 40, code: true, r: 0}, // 왼쪽 대각선
+            {x: 1430, y: 130, w: 10, h: 40, code: true, r: 0}, // 오른쪽 대각선
+            {x: 1410, y: 110, w: 10, h: 60, code: true, r: 0}  // 중앙 축
+        ],
+        vanishingPlatforms: [
+            // 사라지는 발판들 (플레이어가 가까이 가면 나타남)
+            {x: 150, y: 450, w: 100, h: 30, r: 200, code: true},
+            {x: 450, y: 400, w: 100, h: 30, r: 200, code: true},
+            {x: 750, y: 350, w: 100, h: 30, r: 200, code: true},
+            {x: 1050, y: 300, w: 100, h: 30, r: 200, code: true}
+        ],
+        VanishingSpikes: [
+            // 사라지는 가시들 (플레이어가 가까이 가면 사라짐)
+            {x: 300, y: 420, w: 50, h: 20, r: 150, code: false},
+            {x: 600, y: 370, w: 50, h: 20, r: 150, code: false},
+            {x: 900, y: 320, w: 50, h: 20, r: 150, code: false}
+        ],
+        Teleporters: [
+            // 함정 텔레포터
+            {x: 1300, y: 170, w: 30, h: 30, vx: -1300, vy: 200},
+            // 진짜 텔레포터
+            {x: 1400, y: 170, w: 30, h: 30, vx: 1200, vy: 0}
+        ],
+        MovingSpikes: [
+            // 좌우로 움직이는 가시 (속도 감소, 시작 위치 조정)
+            {x: 200, y: 350, w: 30, h: 30, code: true, r: 0, vx: -3, vy: 1, timer: 200},
+            {x: 500, y: 300, w: 30, h: 30, code: true, r: 0, vx: -3, vy: 1, timer: 300},
+            {x: 800, y: 250, w: 30, h: 30, code: true, r: 0, vx: -3, vy: 1, timer: 400},
+            // 마지막 구간의 추격 가시 (속도 감소)
+            {x: -100, y: 200, w: 50, h: 200, code: true, r: 0, vx: 6, vy: 0, timer: 700}
+        ],
+        goal: {x: 2700, y: 250, size: 50}
+    },
 ];
 
 // ===== 키 입력 처리 =====
 let keys = {};
 function AddKeyInput() {
+    // 모바일 디바이스 체크
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    // 모바일 컨트롤 설정
+    if (isMobile) {
+        const leftBtn = document.getElementById('leftButton');
+        const rightBtn = document.getElementById('rightButton');
+        const jumpBtn = document.getElementById('jumpButton');
+        
+        // 터치 이벤트 - 게임 상태 변경
+        document.addEventListener('touchstart', (e) => {
+            if (gameState === "title") {
+                titleScreen.style.display = "none";
+                // 모바일에서는 전체화면 요청
+                document.documentElement.requestFullscreen().catch(err => console.log('전체화면 전환 실패:', err));
+                initGame();
+                gameState = "playing";
+            } else if (gameState === "gameover" || gameState === "clear") {
+                gameOverScreen.style.display = "none";
+                clearScreen.style.display = "none";
+                resetToTitle();
+            }
+        });
+
+        // 이동 버튼 이벤트
+        leftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            keys['arrowleft'] = true;
+        });
+        leftBtn.addEventListener('touchend', () => keys['arrowleft'] = false);
+
+        rightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            keys['arrowright'] = true;
+        });
+        rightBtn.addEventListener('touchend', () => keys['arrowright'] = false);
+
+        jumpBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameState === "playing" && player && player.onGround) {
+                player.vy = -player.jumpPower;
+                if(sounds[0]) {
+                    sounds[0].currentTime = 0;
+                    sounds[0].play();
+                }
+                player.onGround = false;
+            }
+        });
+    }
+
+    // 키보드 이벤트
     window.addEventListener("keydown", e => {
         const key = e.key.toLowerCase();
         keys[key] = true;
-        if (gameState === "title" && key === " ") {
+        if (!isMobile && gameState === "title" && key === " ") {
             titleScreen.style.display = "none";
-            document.documentElement.requestFullscreen();
+            document.documentElement.requestFullscreen().catch(err => console.log('전체화면 전환 실패:', err));
             initGame();
             gameState = "playing";
         } else if (gameState === "playing" && key === "backspace") {
             e.preventDefault();
             resetToTitle();
         } else if ((gameState === "gameover" || gameState === "clear") && key.toLowerCase() === "r") {
-            // 게임오버 또는 클리어 화면에서 아무 키 누르면 타이틀로
             gameOverScreen.style.display = "none";
             clearScreen.style.display = "none";
             resetToTitle();
@@ -620,7 +727,7 @@ function gameLoop() {
                 sounds[0].currentTime = 0.1; // 재생 위치를 처음으로 돌림
                 sounds[0].play().catch(e => console.log("점프 소리 재생 실패:", e));
             }
-                        player.vy = -jump;
+            player.vy = -player.jumpPower;
             player.onGround = false;
         }
 
