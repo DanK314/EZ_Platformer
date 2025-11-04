@@ -507,6 +507,26 @@ const stages = [
         ],
         goal: {x: 2700, y: 250, size: 50}
     },
+    {
+        platforms: [
+            {x: -500, y: 500, w: 100, h: 50},
+            {x: -300, y: 600, w: 100, h: 50},
+            {x: -100, y: 700, w: 200, h: 50},
+            {x: 200, y: 600, w: 100, h: 50},
+            {x: 400, y: 500, w: 100, h: 50},
+            {x: -500, y: 900, w: 1000, h: 50},
+        ],
+        spikes: [],
+        vanishingPlatforms: [],
+        VanishingSpikes: [],
+        Teleporters: [],
+        MovingSpikes: [
+            {x: -1000, y: 800, w: 2000, h: 10, code: true, r: 0, vx: 0, vy: 10, timer: 1200},
+
+            {x: -50, y: -500, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 100},
+        ],
+        goal: {x: -25, y: 850, size: 50}
+    },
 ];
 
 // ===== 키 입력 처리 =====
