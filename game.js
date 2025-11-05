@@ -503,7 +503,7 @@ const stages = [
             {x: 500, y: 300, w: 30, h: 30, code: true, r: 0, vx: -3, vy: 1, timer: 300},
             {x: 800, y: 250, w: 30, h: 30, code: true, r: 0, vx: -3, vy: 1, timer: 400},
             // 마지막 구간의 추격 가시 (속도 감소)
-            {x: -100, y: 200, w: 50, h: 200, code: true, r: 0, vx: 6, vy: 0, timer: 700}
+            {x: -100, y: 200, w: 50, h: 1000, code: true, r: 0, vx: 6, vy: 0, timer: 700}
         ],
         goal: {x: 2700, y: 250, size: 50}
     },
@@ -521,9 +521,21 @@ const stages = [
         VanishingSpikes: [],
         Teleporters: [],
         MovingSpikes: [
-            {x: -1000, y: 800, w: 2000, h: 10, code: true, r: 0, vx: 0, vy: 10, timer: 1200},
-
-            {x: -50, y: -500, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 100},
+            {x: -1000, y: 800, w: 2000, h: 10, code: true, r: 0, vx: 0, vy: 10, timer: 2400},
+            // 위에서 떨어짐
+            {x: -50, y: -800, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 200},
+            {x: 50, y: -800, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 300},
+            {x: -150, y: -800, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 300},
+            {x: 150, y: -800, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 400},
+            {x: -250, y: -800, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 400},
+            {x: 250, y: -800, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 500},
+            {x: -350, y: -800, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 500},
+            {x: 350, y: -800, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 600},
+            {x: -450, y: -800, w: 100, h: 300, code: true, r: 0, vx: 0, vy: 10, timer: 600},
+            {x: -1000, y: 0, w: 50, h: 550, code: true, r: 0, vx: 20, vy: -1, timer: 800},
+            {x: 950, y: 0, w: 50, h: 550, code: true, r: 0, vx: -20, vy: -1, timer: 800},
+            {x: -1000, y: 600, w: 50, h: 500, code: true, r: 0, vx: 20, vy: 1, timer: 800},
+            {x: 950, y: 600, w: 50, h: 500, code: true, r: 0, vx: -20, vy: 1, timer: 800},
         ],
         goal: {x: -25, y: 850, size: 50}
     },
@@ -537,9 +549,55 @@ function AddKeyInput() {
     
     // 모바일 컨트롤 설정
     if (isMobile) {
-        const leftBtn = document.getElementById('leftButton');
-        const rightBtn = document.getElementById('rightButton');
-        const jumpBtn = document.getElementById('jumpButton');
+        let leftBtn = document.getElementById('leftButton');
+        let rightBtn = document.getElementById('rightButton');
+        let jumpBtn = document.getElementById('jumpButton');
+        
+        // 버튼이 없으면 간단한 대체 버튼 생성
+        if (!leftBtn || !rightBtn || !jumpBtn) {
+            const styleBtn = (btn) => {
+                btn.style.position = 'fixed';
+                btn.style.zIndex = '10001';
+                btn.style.width = '60px';
+                btn.style.height = '60px';
+                btn.style.borderRadius = '8px';
+                btn.style.opacity = '0.6';
+                btn.style.fontSize = '18px';
+                btn.style.textAlign = 'center';
+                btn.style.lineHeight = '60px';
+                btn.style.userSelect = 'none';
+                btn.style.touchAction = 'none';
+                document.body.appendChild(btn);
+            };
+
+            if (!leftBtn) {
+                leftBtn = document.createElement('div');
+                leftBtn.id = 'leftButton';
+                leftBtn.innerText = '◀';
+                leftBtn.style.left = '10px';
+                leftBtn.style.bottom = '80px';
+                leftBtn.style.background = '#333';
+                styleBtn(leftBtn);
+            }
+            if (!rightBtn) {
+                rightBtn = document.createElement('div');
+                rightBtn.id = 'rightButton';
+                rightBtn.innerText = '▶';
+                rightBtn.style.left = '80px';
+                rightBtn.style.bottom = '80px';
+                rightBtn.style.background = '#333';
+                styleBtn(rightBtn);
+            }
+            if (!jumpBtn) {
+                jumpBtn = document.createElement('div');
+                jumpBtn.id = 'jumpButton';
+                jumpBtn.innerText = '▲';
+                jumpBtn.style.right = '10px';
+                jumpBtn.style.bottom = '80px';
+                jumpBtn.style.background = '#0a84ff';
+                styleBtn(jumpBtn);
+            }
+        }
         
         // 터치 이벤트 - 게임 상태 변경
         document.addEventListener('touchstart', (e) => {
@@ -556,30 +614,34 @@ function AddKeyInput() {
             }
         });
 
-        // 이동 버튼 이벤트
-        leftBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            keys['arrowleft'] = true;
-        });
-        leftBtn.addEventListener('touchend', () => keys['arrowleft'] = false);
-
-        rightBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            keys['arrowright'] = true;
-        });
-        rightBtn.addEventListener('touchend', () => keys['arrowright'] = false);
-
-        jumpBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (gameState === "playing" && player && player.onGround) {
-                player.vy = -player.jumpPower;
-                if(sounds[0]) {
-                    sounds[0].currentTime = 0;
-                    sounds[0].play();
+        // 이동 버튼 이벤트 (존재할 때만 등록)
+        if (leftBtn) {
+            leftBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys['arrowleft'] = true;
+            });
+            leftBtn.addEventListener('touchend', () => keys['arrowleft'] = false);
+        }
+        if (rightBtn) {
+            rightBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys['arrowright'] = true;
+            });
+            rightBtn.addEventListener('touchend', () => keys['arrowright'] = false);
+        }
+        if (jumpBtn) {
+            jumpBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === "playing" && player && player.onGround) {
+                    player.vy = -player.jumpPower;
+                    if(sounds[0]) {
+                        sounds[0].currentTime = 0;
+                        sounds[0].play();
+                    }
+                    player.onGround = false;
                 }
-                player.onGround = false;
-            }
-        });
+            });
+        }
     }
 
     // 키보드 이벤트
